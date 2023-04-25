@@ -1,0 +1,12 @@
+{
+  "name": "al-the-alpaca",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "David Robinson (david@cuyana.com)",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.1.0",
+    "axios": "^1.3.6",
+    "escape-html": "^1.0.3"
+  }
+}
