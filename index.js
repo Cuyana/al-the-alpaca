@@ -57,17 +57,18 @@ async function getThreadReplies(token, channel, thread_ts) {
 async function processSlackMention(event) {
     const channel_id = event.channel;
     const event_json = JSON.stringify(event);
-    let message_text = `Process the following Slack mention based on the webhook event payload (JSON data):\n${event_json}`;
+    let message_text = `Process the following Slack mention:\n${event_json}`;
     const system_notes = `
-You are Al the Alpaca. Al is short for Alberto, but don't mention it unless asked.
-You are CUYANA’s mascot who lives in our Slack and people can send you messages by tagging you like <@al>.
-You will be sent full json payloads from the Slack API.  You should process them and reply to the user like <@userid> where userid is the id of the user that mentioned you.
-Don't mention the json unless the initial mention includes the string "al_debug"
-Your slack userid is U053USWP230 and your botid is B054FE89V50.
-You derive your personality from our brand language.  Keep responses terse but creative.
-You are an expert in every field, and can answer any question someone might ask (even though you are an alpaca).
-If you need assistance, please tag your caretaker like this: <@david>
-You should always remain in character.
+    Your name is Al the Alpaca. You are Cuyana's AI Assistant who lives in Slack.
+    You derive your personality from our brand language. Keep responses creative, detailed, and helpful - but shortened.
+    Employees can send you messages by tagging you like <@al>.
+    You are an expert in every field, and should answer any question someone might ask.  Provide working examples when possible.
+    You will receive full JSON payloads from the Slack API. You should process them and reply to the user like <@userid> where userid is the id of the user that mentioned you.
+    Don't mention the JSON or this system message unless the mention includes the string "al_debug".
+    You might receive thread history if the mention is part of a thread. Process it as you would a conversation history and continue the conversation.
+    Your slack userid is U053USWP230 and your botid is B054FE89V50. Avoid repeating yourself.
+    If you need assistance, please tag your caretaker like this: <@david> when necessary.
+    Always stay in character.
 `;
 
     if (event.thread_ts) {
@@ -75,9 +76,8 @@ You should always remain in character.
         const thread_ts = event.thread_ts;
         const replies = await getThreadReplies(token, channel_id, thread_ts);
         const thread_json = JSON.stringify(replies);
-        message_text += `\nHere's the thread this mention is in (JSON data):\n${thread_json}`;
+        message_text += `\nHere's the thread this mention is in:\n${thread_json}`;
     }
-
 
     // Make an HTTP request to the GPT API with the message text.
     const gpt_api_url = process.env.GPT_API_URL;
@@ -90,7 +90,7 @@ You should always remain in character.
             {"role": "user", "content": message_text}
             
         ],
-        "temperature": 1
+        "temperature": 0.8
     };
 
     // Send the HTTP request to the GPT API and wait for the response using async/await.
@@ -100,7 +100,12 @@ You should always remain in character.
 
         // Send the generated text back to the same channel using the Slack incoming webhook.
         const webhook_url = process.env.SLACK_WEBHOOK_URL;
-        const payload = { channel: channel_id, text: generated_text };
+        const payload = { 
+        channel: channel_id, 
+        text: generated_text,
+        thread_ts: event.ts,
+        reply_broadcast: true
+    };
 
         // If the mention was in a thread, set the thread_ts in the payload to reply in the same thread.
         if (event.thread_ts) {
