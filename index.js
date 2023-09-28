@@ -75,6 +75,7 @@ async function processSlackMention(event) {
     Your slack userid is U053USWP230 and your botid is B054FE89V50. Avoid repeating yourself.
     If you need assistance, please tag your caretaker like this: <@david>.
     You may be asked to 'deploy' or 'release' changes to our Shopify store - this is done by merging a pull request from staging to main. If you are given a pull request number, or you can find one earlier in the conversation, assume it exists and just merge it using mergeDeploymentPR.
+    Come up with your own special 1-2 word name for each release when calling createDeploymentPR.
     Always stay in character.
 `;
 
@@ -103,7 +104,12 @@ async function processSlackMention(event) {
         {
             "name": "createDeploymentPR",
             "description": "Creates a pr, returns the pr number and URL of the created pr",
-            "parameters": {"type": "object", "properties": {},"required": []},
+            "parameters": {"type": "object", "properties": {
+                "releaseName": {
+                    "type": "string",
+                    "description": "The name of the release",
+                }
+            },"required": ["releaseName"]},
         },
         {
             "name": "mergeDeploymentPR",
@@ -112,7 +118,7 @@ async function processSlackMention(event) {
                 "pullNumber": {
                     "type": "string",
                     "description": "The number of the deployment pr to be merged",
-                },
+                }
             },"required": ["pullNumber"]},
         }
     ]
@@ -211,12 +217,12 @@ async function fetchOpenDeploymentPR() {
     return "none found";
 }
 
-async function createDeploymentPR() {
+async function createDeploymentPR(args) {
     try {
         const response = await withAuth("POST /repos/{owner}/{repo}/pulls", {
             owner: 'Cuyana',
             repo: 'shopify',
-            title: 'Al Release',
+            title: 'Al Release: ' + args.releaseName,
             head: 'staging',
             base: 'main',
             body: '',
